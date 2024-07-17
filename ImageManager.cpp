@@ -26,20 +26,22 @@ bool ImageManager::read(const char* fileName) //READ
         return false;
     }
 
-    for(int i = 0; i < BMP_HEADER_SIZE; i++)
+    for(int i = 0; i < BMP_HEADER_SIZE; i++) //54 byte
     {
         header[i] = getc(fi);
     }
-    width = *(int *)&header[18];
-    height = *(int *)&header[22];
+    width = *(int *)&header[18]; //position of width(int) on header
+    height = *(int *)&header[22]; //same with height and bitDepth
     bitDepth = *(int *)&header[28];
 
     if(bitDepth <= 8){
         fread(colorTable,sizeof(unsigned char), BMP_COLOR_TABLE_SIZE, fi);
     }
 
-    buf = new unsigned char[height * width * (bitDepth / BYTE)];
+    //buf is the info of image by comprising height, width and bitDepth(is 24 bit)
+    buf = new unsigned char[height * width * (bitDepth / BYTE)];//got divided by 8, so we have 3 color channels
     fread(buf,sizeof(unsigned char), height * width * (bitDepth / BYTE), fi);
+    //read on buffer, size, array , read by fi
 
     original = new unsigned char[height * width * (bitDepth / BYTE)];
     for (int i = 0; i < (height * width * (bitDepth / BYTE)); i++)
@@ -61,7 +63,7 @@ bool ImageManager::write(const char* fileName) //WRITE
         cout << "Unable to create file" << endl;
         return false;
     }
-    fwrite(header,sizeof(unsigned char),BMP_HEADER_SIZE,fo);//HEADER
+    fwrite(header,sizeof(unsigned char),BMP_HEADER_SIZE,fo);//WRITING HEADER
 
     if(bitDepth <= 8)
     {
@@ -90,9 +92,9 @@ int ImageManager::getRGB(int x, int y)
 
 void ImageManager::setRGB(int x, int y, int color)
 {
-    int r = (color >> 16) & 0xff;
-    int g = (color >> 8) & 0xff;
-    int b = color & 0xff;
+    int r = (color >> 16) & 0xff;//shift-right bit for 16
+    int g = (color >> 8) & 0xff; //shift-right bit for 8
+    int b = color & 0xff; //when you & with 0xff, you'll get blue channel!
     int i = y * width * (bitDepth / BYTE) + x * (bitDepth / BYTE);
     buf[i] = b;
     buf[i + 1] = g;
@@ -101,6 +103,7 @@ void ImageManager::setRGB(int x, int y, int color)
 
 void ImageManager::convertToRed()
 {
+    //looping to get all pixels
     for (int y = 0; y < height; y++){
         for (int x = 0; x < width; x++){
             int color = getRGB(x, y);
@@ -108,6 +111,7 @@ void ImageManager::convertToRed()
             int g = (color >> 8) & 0xff;
             int b = color & 0xff;
             color = (r << 16) | (0 << 8) | 0;
+            //<< shift left because we need to get r
             setRGB(x, y, color);
         }
     }
@@ -139,10 +143,26 @@ void ImageManager::convertToGreen()
             setRGB(x, y, color);
         }
     }
-}
+} 
 
 void ImageManager::restoreToOriginal(){
 for (int i = 0; i < (height * width * (bitDepth / BYTE)); i++){
     buf[i] = original[i];
     }
 }
+
+void ImageManager::convertToGrayscale()
+{
+    for (int y = 0; y < height; y++){
+        for (int x = 0; x < width; x++){
+            int color = getRGB(x, y);
+            int r = (color >> 16) & 0xff;
+            int g = (color >> 8) & 0xff;
+            int b = color & 0xff;
+            int m = (r+g+b)/3;
+        
+            color = (m << 16) | (m << 8) | m;
+            setRGB(x, y, color);
+        }
+    }
+} 

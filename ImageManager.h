@@ -18,6 +18,7 @@ class ImageManager
         void convertToBlue();
         void convertToGreen();
         void restoreToOriginal();
+        void convertToGrayscale();
 
         int width;
         int height;
